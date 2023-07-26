@@ -6,9 +6,10 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-        diffusers-version: ["0.14.0", "0.15.0", "0.15.1", "0.16.0", "0.16.1", "0.17.0", "0.17.1", "0.18.0", "0.18.1", "0.18.2"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        diffusers-version: ["0.14.0", "0.15.1", "0.16.1", "0.17.1", "0.18.2"]
     steps:
       - uses: actions/checkout@v3
       - name: Python ${{ matrix.python-version }}
