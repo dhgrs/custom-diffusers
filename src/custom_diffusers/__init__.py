@@ -10,7 +10,7 @@ if packaging.version.parse(diffusers.__version__) < packaging.version.parse("0.1
         UNet2DOutput,
     )
 else:
-    from .controlnet import (
+    from .controlnet import (  # type: ignore
         ControlNet2dModel,
         ControlNetOutput,
         UNet2dModel,
