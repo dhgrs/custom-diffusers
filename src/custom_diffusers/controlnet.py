@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Type, Union
 
 import diffusers
 import torch
@@ -19,10 +19,10 @@ from diffusers.models.unet_2d import UNet2DOutput
 from diffusers.models.unet_2d_blocks import UNetMidBlock2D, get_down_block
 
 
-class UNet2dModel(diffusers.UNet2DModel):
+class UNet2dModel(diffusers.UNet2DModel):  # type: ignore
     def forward(
         self,
-        sample: torch.FloatTensor,
+        sample: torch.Tensor,
         timestep: Union[torch.Tensor, float, int],
         class_labels: Optional[torch.Tensor] = None,
         down_block_additional_residuals: Optional[Tuple[torch.Tensor]] = None,
@@ -33,10 +33,10 @@ class UNet2dModel(diffusers.UNet2DModel):
         The [`UNet2DModel`] forward method.
 
         Args:
-            sample (`torch.FloatTensor`):
+            sample (`torch.Tensor`):
                 The noisy input tensor with the following shape `(batch, channel, height, width)`.
-            timestep (`torch.FloatTensor` or `float` or `int`): The number of timesteps to denoise an input.
-            class_labels (`torch.FloatTensor`, *optional*, defaults to `None`):
+            timestep (`torch.Tensor` or `float` or `int`): The number of timesteps to denoise an input.
+            class_labels (`torch.Tensor`, *optional*, defaults to `None`):
                 Optional class labels for conditioning. Their embeddings will be summed with the timestep embeddings.
             return_dict (`bool`, *optional*, defaults to `True`):
                 Whether or not to return a [`~models.unet_2d.UNet2DOutput`] instead of a plain tuple.
@@ -52,12 +52,14 @@ class UNet2dModel(diffusers.UNet2DModel):
 
         # 1. time
         timesteps = timestep
-        if not torch.is_tensor(timesteps):
+        if not torch.is_tensor(timesteps):  # type: ignore
             timesteps = torch.tensor(
                 [timesteps], dtype=torch.long, device=sample.device
             )
-        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
+        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:  # type: ignore
+            assert isinstance(timesteps, torch.Tensor)
             timesteps = timesteps[None].to(sample.device)
+        assert isinstance(timesteps, torch.Tensor)
 
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps * torch.ones(
@@ -85,11 +87,11 @@ class UNet2dModel(diffusers.UNet2DModel):
             emb = emb + class_emb
 
         # 2. pre-process
-        skip_sample = sample
+        skip_sample: Optional[torch.Tensor] = sample
         sample = self.conv_in(sample)
 
         # 3. down
-        down_block_res_samples = (sample,)
+        down_block_res_samples: Tuple[torch.Tensor, ...] = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "skip_conv"):
                 sample, res_samples, skip_sample = downsample_block(
@@ -101,7 +103,7 @@ class UNet2dModel(diffusers.UNet2DModel):
             down_block_res_samples += res_samples
 
         if down_block_additional_residuals is not None:
-            new_down_block_res_samples = ()
+            new_down_block_res_samples: Tuple[torch.Tensor, ...] = ()
             for down_block_res_sample, down_block_additional_residual in zip(
                 down_block_res_samples, down_block_additional_residuals
             ):
@@ -168,7 +170,7 @@ class UNet2dModel(diffusers.UNet2DModel):
         return unet
 
 
-class ControlNet2dModel(ModelMixin, ConfigMixin):
+class ControlNet2dModel(ModelMixin, ConfigMixin):  # type: ignore
     @register_to_config
     def __init__(
         self,
@@ -179,19 +181,19 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
         time_embedding_type: str = "positional",
         freq_shift: int = 0,
         flip_sin_to_cos: bool = True,
-        down_block_types: Tuple[str] = (
+        down_block_types: Tuple[str, ...] = (
             "DownBlock2D",
             "AttnDownBlock2D",
             "AttnDownBlock2D",
             "AttnDownBlock2D",
         ),
-        up_block_types: Tuple[str] = (
+        up_block_types: Tuple[str, ...] = (
             "AttnUpBlock2D",
             "AttnUpBlock2D",
             "AttnUpBlock2D",
             "UpBlock2D",
         ),
-        block_out_channels: Tuple[int] = (224, 448, 672, 896),
+        block_out_channels: Tuple[int, ...] = (224, 448, 672, 896),
         layers_per_block: int = 2,
         mid_block_scale_factor: float = 1,
         downsample_padding: int = 1,
@@ -204,7 +206,7 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
         add_attention: bool = True,
         class_embed_type: Optional[str] = None,
         num_class_embeds: Optional[int] = None,
-        conditioning_embedding_out_channels: Tuple[int] = (16, 32, 96, 256),
+        conditioning_embedding_out_channels: Tuple[int, ...] = (16, 32, 96, 256),
     ) -> None:
         super().__init__()
 
@@ -242,6 +244,7 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
         self.time_embedding = TimestepEmbedding(timestep_input_dim, time_embed_dim)
 
         # class embedding
+        self.class_embedding: Optional[torch.nn.Module]
         if class_embed_type is None and num_class_embeds is not None:
             self.class_embedding = torch.nn.Embedding(num_class_embeds, time_embed_dim)
         elif class_embed_type == "timestep":
@@ -331,7 +334,7 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
 
     @classmethod
     def from_unet(
-        cls,
+        cls: Type["ControlNet2dModel"],
         unet: UNet2dModel,
         conditioning_channels: int,
         conditioning_embedding_out_channels: Tuple[int],
@@ -377,13 +380,13 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
             controlnet.down_blocks.load_state_dict(unet.down_blocks.state_dict())
             controlnet.mid_block.load_state_dict(unet.mid_block.state_dict())
 
-        return controlnet
+        return controlnet  # type: ignore
 
     def forward(
         self,
-        sample: torch.FloatTensor,
+        sample: torch.Tensor,
         timestep: Union[torch.Tensor, float, int],
-        controlnet_cond: torch.FloatTensor,
+        controlnet_cond: torch.Tensor,
         conditioning_scale: float = 1.0,
         class_labels: Optional[torch.Tensor] = None,
         return_dict: bool = True,
@@ -394,12 +397,14 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
 
         # 1. time
         timesteps = timestep
-        if not torch.is_tensor(timesteps):
+        if not torch.is_tensor(timesteps):  # type: ignore
             timesteps = torch.tensor(
                 [timesteps], dtype=torch.long, device=sample.device
             )
-        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:
+        elif torch.is_tensor(timesteps) and len(timesteps.shape) == 0:  # type: ignore
+            assert isinstance(timesteps, torch.Tensor)
             timesteps = timesteps[None].to(sample.device)
+        assert isinstance(timesteps, torch.Tensor)
 
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps * torch.ones(
@@ -434,7 +439,7 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
         sample = sample + controlnet_cond
 
         # 3. down
-        down_block_res_samples = (sample,)
+        down_block_res_samples: Tuple[torch.Tensor, ...] = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "skip_conv"):
                 sample, res_samples, skip_sample = downsample_block(
@@ -450,7 +455,7 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):
 
         # 5. Control net blocks
 
-        controlnet_down_block_res_samples = ()
+        controlnet_down_block_res_samples: Tuple[torch.Tensor, ...] = ()
 
         for down_block_res_sample, controlnet_block in zip(
             down_block_res_samples, self.controlnet_down_blocks
