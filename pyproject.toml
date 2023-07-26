@@ -3,6 +3,10 @@ name = "custom-diffusers"
 description = "Custom diffusers"
 readme = "README.md"
 license = {file = "LICENSE"}
+dependencies = [
+    "diffusers>=0.14.0",
+    "torch"
+]
 version = "0.0"
 
 [tool.setuptools]
