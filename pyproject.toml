@@ -5,7 +5,8 @@ readme = "README.md"
 license = {file = "LICENSE"}
 dependencies = [
     "diffusers>=0.18.0",
-    "torch"
+    "torch",
+    "packaging",
 ]
 version = "0.0"
 
