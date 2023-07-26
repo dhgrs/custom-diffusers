@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.8'
       - run: |
           python -m pip install . pytest
           pytest tests
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.8'
       - run: |
           python -m pip install . pysen==0.10.5 isort==5.12.0 black==23.7.0 flake8==6.0.0 mypy==1.4.1
           pysen run lint
