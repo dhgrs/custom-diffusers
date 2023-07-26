@@ -34,17 +34,22 @@ class UNet2dModel(diffusers.UNet2DModel):  # type: ignore
 
         Args:
             sample (`torch.Tensor`):
-                The noisy input tensor with the following shape `(batch, channel, height, width)`.
-            timestep (`torch.Tensor` or `float` or `int`): The number of timesteps to denoise an input.
+                The noisy input tensor with the following shape
+                `(batch, channel, height, width)`.
+            timestep (`torch.Tensor` or `float` or `int`):
+                The number of timesteps to denoise an input.
             class_labels (`torch.Tensor`, *optional*, defaults to `None`):
-                Optional class labels for conditioning. Their embeddings will be summed with the timestep embeddings.
+                Optional class labels for conditioning. Their embeddings will be summed
+                with the timestep embeddings.
             return_dict (`bool`, *optional*, defaults to `True`):
-                Whether or not to return a [`~models.unet_2d.UNet2DOutput`] instead of a plain tuple.
+                Whether or not to return a [`~models.unet_2d.UNet2DOutput`] instead of
+                a plain tuple.
 
         Returns:
             [`~models.unet_2d.UNet2DOutput`] or `tuple`:
-                If `return_dict` is True, an [`~models.unet_2d.UNet2DOutput`] is returned, otherwise a `tuple` is
-                returned where the first element is the sample tensor.
+                If `return_dict` is True, an [`~models.unet_2d.UNet2DOutput`] is
+                returned, otherwise a `tuple` is returned where the first element is
+                the sample tensor.
         """
         # 0. center input if necessary
         if self.config.center_input_sample:
@@ -216,12 +221,16 @@ class ControlNet2dModel(ModelMixin, ConfigMixin):  # type: ignore
         # Check inputs
         if len(down_block_types) != len(up_block_types):
             raise ValueError(
-                f"Must provide the same number of `down_block_types` as `up_block_types`. `down_block_types`: {down_block_types}. `up_block_types`: {up_block_types}."
+                "Must provide the same number of `down_block_types` as "
+                f"`up_block_types`. `down_block_types`: {down_block_types}. "
+                f"`up_block_types`: {up_block_types}."
             )
 
         if len(block_out_channels) != len(down_block_types):
             raise ValueError(
-                f"Must provide the same number of `block_out_channels` as `down_block_types`. `block_out_channels`: {block_out_channels}. `down_block_types`: {down_block_types}."
+                "Must provide the same number of `block_out_channels` as "
+                f"`down_block_types`. `block_out_channels`: {block_out_channels}. "
+                f"`down_block_types`: {down_block_types}."
             )
 
         # input
