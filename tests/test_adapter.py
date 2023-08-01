@@ -47,7 +47,8 @@ class UNet2dModelArgs:  # type: ignore
 
 
 @pytest.mark.skipif(
-    packaging.version.parse(diffusers.__version__) < packaging.version.parse("0.19.0")
+    packaging.version.parse(diffusers.__version__) < packaging.version.parse("0.19.0"),
+    reason="requires diffusers>=0.19.0",
 )
 @pytest.mark.parametrize(
     "unet_2d_model_args",
