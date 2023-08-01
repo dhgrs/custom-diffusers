@@ -164,6 +164,17 @@ def test_from_unet(
         atol=1e-6,
         rtol=1e-6,
     )
+    assert not torch.allclose(
+        expected,
+        unet(
+            sample=sample,
+            timestep=timestep,
+            down_block_additional_residuals=t2i_adapter_outputs,
+            mid_block_additional_residual=None,
+        ).sample,
+        atol=1e-6,
+        rtol=1e-6,
+    )
     torch.testing.assert_close(
         expected, unet(sample=sample, timestep=timestep).sample, atol=1e-6, rtol=1e-6
     )
