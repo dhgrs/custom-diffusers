@@ -8,6 +8,7 @@ import pytest
 import torch
 from custom_diffusers import UNet2dModel
 
+
 @dataclasses.dataclass
 class UNet2dModelArgs:  # type: ignore
     sample_size: Optional[Union[int, Tuple[int, int]]] = None
@@ -45,11 +46,13 @@ class UNet2dModelArgs:  # type: ignore
     num_class_embeds: Optional[int] = None
 
 
-@pytest.mark.skipif(packaging.version.parse(diffusers.__version__) < packaging.version.parse("0.19.0"))
+@pytest.mark.skipif(
+    packaging.version.parse(diffusers.__version__) < packaging.version.parse("0.19.0")
+)
 @pytest.mark.parametrize(
     "unet_2d_model_args",
     [
-UNet2dModelArgs(),
+        UNet2dModelArgs(),
         UNet2dModelArgs(
             block_out_channels=(32, 64),
             down_block_types=("DownBlock2D", "AttnDownBlock2D"),
@@ -95,21 +98,19 @@ UNet2dModelArgs(),
     ],
 )
 def test_from_unet(
-    unet_2d_model_args: UNet2dModelArgs,
-    conditioning_channels: int = 32
+    unet_2d_model_args: UNet2dModelArgs, conditioning_channels: int = 32
 ) -> None:
     t2i_adapter = diffusers.T2IAdapter(
         conditioning_channels,
-        channels=unet_2d_model_args.block_out_channels[:1]+unet_2d_model_args.block_out_channels[:-1],
+        channels=unet_2d_model_args.block_out_channels[:1]
+        + unet_2d_model_args.block_out_channels[:-1],
         num_res_blocks=unet_2d_model_args.layers_per_block,
         downscale_factor=1,
-        adapter_type="full_adapter"
+        adapter_type="full_adapter",
     )
     if unet_2d_model_args.sample_size is None:
         sample = torch.randn((4, unet_2d_model_args.in_channels, 32, 32))
-        condition = torch.randn(
-            (4, conditioning_channels, 32, 32)
-        )
+        condition = torch.randn((4, conditioning_channels, 32, 32))
     elif isinstance(unet_2d_model_args.sample_size, int):
         sample = torch.randn(
             (
@@ -135,10 +136,7 @@ def test_from_unet(
             (
                 4,
                 conditioning_channels,
-                *(
-                    sample_size
-                    for sample_size in unet_2d_model_args.sample_size
-                ),
+                *(sample_size for sample_size in unet_2d_model_args.sample_size),
             )
         )
 
@@ -156,7 +154,10 @@ def test_from_unet(
         unet(
             sample=sample,
             timestep=timestep,
-            down_block_additional_residuals=[torch.zeros_like(t2i_adapter_output) for t2i_adapter_output in t2i_adapter_outputs],
+            down_block_additional_residuals=[
+                torch.zeros_like(t2i_adapter_output)
+                for t2i_adapter_output in t2i_adapter_outputs
+            ],
             mid_block_additional_residual=None,
         ).sample,
         atol=1e-6,

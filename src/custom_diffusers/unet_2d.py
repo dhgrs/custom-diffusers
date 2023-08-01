@@ -1,7 +1,8 @@
-from typing import Optional, Tuple, Union, List
+from typing import List, Optional, Tuple, Union
 
 import diffusers
 import torch
+
 
 class UNet2dModel(diffusers.UNet2DModel):  # type: ignore
     def forward(
@@ -80,13 +81,19 @@ class UNet2dModel(diffusers.UNet2DModel):  # type: ignore
         sample = self.conv_in(sample)
 
         # 3. down
-        is_controlnet = mid_block_additional_residual is not None and down_block_additional_residuals is not None
-        is_adapter = mid_block_additional_residual is None and down_block_additional_residuals is not None
+        is_controlnet = (
+            mid_block_additional_residual is not None
+            and down_block_additional_residuals is not None
+        )
+        is_adapter = (
+            mid_block_additional_residual is None
+            and down_block_additional_residuals is not None
+        )
 
         down_block_res_samples: Tuple[torch.Tensor, ...] = (sample,)
         for downsample_block in self.down_blocks:
-            if is_adapter and len(down_block_additional_residuals) > 0: # type: ignore
-                sample += down_block_additional_residuals.pop(0) # type: ignore
+            if is_adapter and len(down_block_additional_residuals) > 0:  # type: ignore
+                sample += down_block_additional_residuals.pop(0)  # type: ignore
             if hasattr(downsample_block, "skip_conv"):
                 sample, res_samples, skip_sample = downsample_block(
                     hidden_states=sample, temb=emb, skip_sample=skip_sample
